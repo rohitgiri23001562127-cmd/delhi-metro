@@ -922,7 +922,6 @@ body{
   .about-stats-grid{gap:8px}
   .asc-val{font-size:1rem}
 }
-
 </style>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet"/>
@@ -1385,8 +1384,8 @@ function enterSite(){
       </div>
     </div>
     <button class="geo-btn" id="geo-btn" onclick="detectLocation()">
-      <span class="geo-icon" id="geo-icon">🔍</span>
-      <span id="geo-btn-text">Find Nearest Station</span>
+      <span class="geo-icon" id="geo-icon">📍</span>
+      <span id="geo-btn-text">Use My Location — मेरी location से nearest station चुनें</span>
     </button>
     <button class="find-btn" onclick="playFindRouteSound();findRoute()" style="margin-top:10px;">
       <img src="https://latestlogo.com/wp-content/uploads/2025/06/delhi-metro-logo-scaled.png" alt="Delhi Metro" style="width:28px;height:28px;object-fit:contain;background:#fff;border-radius:5px;padding:2px;flex-shrink:0;" onerror="this.style.display='none'"/>
@@ -3159,52 +3158,6 @@ function showNearbyModal(stations, userLat, userLng){
   document.body.style.overflow='hidden';
 }
 
-// ── UNIFIED LOCATION SYSTEM ──
-// Stores location once, used by both visitor tracker + geo tracker
-window._geoPos = null; // {lat, lng} stored after permission
-window._geoPermission = 'pending'; // 'granted' | 'denied' | 'pending'
-window._geoCallbacks = []; // queued callbacks waiting for result
-
-function _runNearestStations(lat, lng){
-  var btn=document.getElementById('geo-btn');
-  var icon=document.getElementById('geo-icon');
-  var btnText=document.getElementById('geo-btn-text');
-  var results=[];
-  var coords=STATION_COORDS;
-  var keys=Object.keys(coords);
-  for(var i=0;i<keys.length;i++){
-    var code=keys[i];
-    var stationData=CODE_MAP[code];
-    if(!stationData) continue;
-    var slat=coords[code][0], slng=coords[code][1];
-    var R=6371;
-    var dLat=(slat-lat)*Math.PI/180;
-    var dLng=(slng-lng)*Math.PI/180;
-    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
-          Math.cos(lat*Math.PI/180)*Math.cos(slat*Math.PI/180)*
-          Math.sin(dLng/2)*Math.sin(dLng/2);
-    var dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-    var merged={};
-    for(var k in stationData) merged[k]=stationData[k];
-    merged.dist=dist;
-    results.push(merged);
-  }
-  results.sort(function(a,b){return a.dist-b.dist;});
-  var nearest=results.slice(0,5);
-  if(btn) btn.classList.remove('loading','error');
-  if(icon) icon.textContent='🔍';
-  if(btnText) btnText.textContent='Find Nearest Station';
-  if(!nearest.length){
-    if(btn) btn.classList.add('error');
-    if(icon) icon.textContent='❌';
-    showGeoToast('Koi nearby station nahi mila. Delhi NCR mein hain?', 4000);
-    return;
-  }
-  var gt=document.getElementById('geo-toast');
-  if(gt) gt.classList.remove('show');
-  showNearbyModal(nearest, lat, lng);
-}
-
 function detectLocation(){
   if(!navigator.geolocation){
     showGeoToast('Aapka browser location support nahi karta', 3000);
@@ -3214,101 +3167,75 @@ function detectLocation(){
   var icon=document.getElementById('geo-icon');
   var btnText=document.getElementById('geo-btn-text');
 
-  // If already have location cached, use it directly — no popup needed
-  if(window._geoPos && window._geoPermission === 'granted'){
-    _runNearestStations(window._geoPos.lat, window._geoPos.lng);
-    return;
-  }
-
-  // Show loading state
-  if(btn){ btn.classList.add('loading'); btn.classList.remove('success','error'); }
-  if(icon) icon.textContent='⏳';
-  if(btnText) btnText.textContent='Location detect ho rahi hai...';
+  btn.classList.add('loading');
+  btn.classList.remove('success','error');
+  icon.textContent='⏳';
+  btnText.textContent='Location detect ho rahi hai...';
   showGeoToast('GPS se location detect ho rahi hai...', 10000);
 
-  // Always call getCurrentPosition directly — browser reuses permission if already granted
   navigator.geolocation.getCurrentPosition(
     function(pos){
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
-      // Store globally so future calls are instant
-      window._geoPos = {lat: lat, lng: lng};
-      window._geoPermission = 'granted';
-      // Send email with location
-      var locStr = lat.toFixed(6)+', '+lng.toFixed(6)+
-                   ' — https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
-      sendVisitorEmail(locStr);
-      // Show nearest stations
-      _runNearestStations(lat, lng);
-    },
-    function(err){
-      window._geoPermission = 'denied';
-      if(btn){ btn.classList.remove('loading'); btn.classList.add('error'); }
-      if(icon) icon.textContent='❌';
-      var msg = 'Location access nahi mili.';
-      if(err.code === 1){
-        msg = '🔒 Location blocked hai. Address bar mein lock icon → Location → Allow karo, phir refresh karo.';
-        if(btnText) btnText.textContent='Blocked — Allow karein';
-      } else if(err.code === 2){
-        msg = '📡 GPS signal nahi mila. WiFi/Mobile data on karo.';
-        if(btnText) btnText.textContent='Dobara try karein';
-      } else if(err.code === 3){
-        msg = '⏱ Timeout. Network slow hai — dobara try karo.';
-        if(btnText) btnText.textContent='Dobara try karein';
-        // Auto retry once on timeout
-        setTimeout(function(){
-          window._geoPermission = 'pending';
-          detectLocation();
-        }, 2000);
+      var lat=pos.coords.latitude;
+      var lng=pos.coords.longitude;
+      console.log('[GeoTracker] Got coords:', lat, lng);
+
+      // Build nearest list directly (don't rely on CODE_MAP scope)
+      var results=[];
+      var coords=STATION_COORDS;
+      var keys=Object.keys(coords);
+      for(var i=0;i<keys.length;i++){
+        var code=keys[i];
+        var stationData=CODE_MAP[code];
+        if(!stationData) continue;
+        var slat=coords[code][0], slng=coords[code][1];
+        var R=6371;
+        var dLat=(slat-lat)*Math.PI/180;
+        var dLng=(slng-lng)*Math.PI/180;
+        var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+              Math.cos(lat*Math.PI/180)*Math.cos(slat*Math.PI/180)*
+              Math.sin(dLng/2)*Math.sin(dLng/2);
+        var dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+        var merged={};
+        for(var k in stationData) merged[k]=stationData[k];
+        merged.dist=dist;
+        results.push(merged);
+      }
+      results.sort(function(a,b){return a.dist-b.dist;});
+      var nearest=results.slice(0,5);
+      console.log('[GeoTracker] Nearest:', nearest.length, nearest.length?nearest[0].en+' '+nearest[0].dist.toFixed(2)+'km':'none');
+
+      btn.classList.remove('loading');
+      icon.textContent='📍';
+      btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+
+      if(!nearest.length){
+        btn.classList.add('error');
+        icon.textContent='❌';
+        showGeoToast('Koi nearby station nahi mila. Delhi NCR mein hain?', 4000);
         return;
       }
-      showGeoToast(msg, 6000);
-      setTimeout(function(){
-        if(btn) btn.classList.remove('error');
-        if(icon) icon.textContent='🔍';
-        if(btnText) btnText.textContent='Find Nearest Station';
-      }, 6000);
+
+      document.getElementById('geo-toast').classList.remove('show');
+      showNearbyModal(nearest, lat, lng);
     },
-    {enableHighAccuracy:false, timeout:8000, maximumAge:60000}
+    function(err){
+      btn.classList.remove('loading');
+      btn.classList.add('error');
+      icon.textContent='❌';
+      btnText.textContent='Dobara try karein';
+      var msg='Location access nahi mili.';
+      if(err.code===1) msg='Permission denied. Browser mein location allow karein.';
+      else if(err.code===2) msg='GPS unavailable. Location on hai?';
+      else if(err.code===3) msg='Timeout. Dobara try karein.';
+      showGeoToast(msg, 4000);
+      setTimeout(function(){
+        btn.classList.remove('error');
+        icon.textContent='📍';
+        btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+      }, 4000);
+    },
+    {enableHighAccuracy:false, timeout:15000, maximumAge:60000}
   );
-}
-</script>
-
-
-
-
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
-emailjs.init('sLxniKQ69d-bZt9Ui');
-
-function sendVisitorEmail(locationStr){
-  var now = new Date();
-  var timeStr = now.toLocaleString('en-IN',{
-    timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
-    year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
-  })+' IST';
-  var ua = navigator.userAgent;
-  var device = /Mobile|Android|iPhone|iPad/i.test(ua)?'Mobile':'Desktop';
-  var browser = /Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':'Safari';
-  var os = /Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Mac/.test(ua)?'Mac':'Linux';
-  var msgBody =
-    'Time     : '+timeStr+'\n'+
-    'Location : '+locationStr+'\n'+
-    'Device   : '+device+'\n'+
-    'Browser  : '+browser+'\n'+
-    'OS       : '+os+'\n'+
-    'Screen   : '+window.screen.width+'x'+window.screen.height;
-  emailjs.send('service_fjkgke7','template_nac0r09',{
-    name:'Delhi Metro Visitor',
-    email:'rohitgiri23001562127@gmail.com',
-    title:'New Visitor — Delhi Metro App',
-    message:msgBody
-  }).then(function(){
-    console.log('[Email] Sent!');
-  },function(err){
-    console.log('[Email] Error:',err.status,err.text);
-  });
 }
 </script>
 
