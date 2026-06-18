@@ -2807,56 +2807,193 @@ function sendHelpEmail(type){
 
 // ── GEO TRACKER ──
 // Major Delhi Metro station coordinates (lat, lng)
+// Source: github.com/dhirajt/delhi-metro-stations (Wikipedia-verified coordinates)
+// + github.com/Vinith-J/Delhi-Metro-Network-Analysis CSV data
 const STATION_COORDS = {
-  // Blue Line
-  'NECC':[28.5706,77.3568],'NS62':[28.6139,77.3716],'NS59':[28.6064,77.3677],'NS61':[28.6101,77.3695],
-  'NS52':[28.6169,77.3592],'NS34':[28.6181,77.3461],'NCC':[28.6205,77.3403],'GC':[28.5817,77.3371],
-  'BG':[28.5611,77.3290],'NS18':[28.5740,77.3205],'NS16':[28.5829,77.3148],'NS15':[28.5893,77.3098],
-  'NAN':[28.6097,77.3012],'MVE':[28.6131,77.2982],'MV1':[28.6082,77.2937],'AKD':[28.6187,77.2849],
-  'YMB':[28.6286,77.2830],'IDPT':[28.6334,77.2697],'SC':[28.6335,77.2494],'MH':[28.6271,77.2415],
-  'BKR':[28.6323,77.2269],'RC':[28.6330,77.2197],'RKA':[28.6376,77.2105],'JHW':[28.6444,77.2040],
-  'KB':[28.6514,77.1908],'RP':[28.6565,77.1800],'PN':[28.6593,77.1703],'SHP':[28.6578,77.1598],
-  'ESH':[28.6474,77.1352],'DWK12':[28.6309,77.1046],'DWK14':[28.6234,77.0863],
-  'DWK':[28.5923,77.0592],'DWK21':[28.5769,77.0678],
-  // Yellow Line
-  'SMB':[28.7368,77.1690],'BGDK':[28.7256,77.1671],'JGPI':[28.7210,77.1669],'RITH':[28.7088,77.1550],
-  'NATH':[28.7030,77.1487],'KGSM':[28.6985,77.1454],'PIT':[28.6926,77.1431],'ROHC':[28.6870,77.1409],
-  'INDRL':[28.6758,77.1567],'EVNG':[28.6716,77.1568],'NETJI':[28.6673,77.1574],'AZAD':[28.6638,77.1680],
-  'WLLS':[28.6561,77.1776],'RBHS':[28.6502,77.1924],'KSSB':[28.6606,77.2026],'NDLS':[28.6420,77.2195],
-  'NDB':[28.6263,77.2153],'CPC':[28.6271,77.2187],'UGC':[28.6059,77.2111],'HUDA':[28.4595,77.0266],
-  // Red Line
-  'RMR':[28.7289,77.2027],'SHAHB':[28.7257,77.2077],'GMPB':[28.7218,77.2133],'SLMB':[28.7199,77.2233],
-  'PRBL':[28.7170,77.2321],'MSDI':[28.7126,77.2432],'WELC':[28.7094,77.2563],'SEWK':[28.6969,77.2646],
-  'VISHW':[28.6910,77.2718],'SBNK':[28.6781,77.2760],'KVSR':[28.6735,77.2803],'MNGF':[28.6694,77.2858],
-  'KSHG':[28.6650,77.2890],'DLSH':[28.6617,77.3166],
-  // Violet Line
-  'KSG':[28.6655,77.2891],'LJN':[28.6402,77.2750],'JNG':[28.6365,77.2653],'MHV':[28.6271,77.2415],
-  'KKD':[28.6260,77.2522],'NZM':[28.5952,77.2505],'SVPR':[28.5898,77.2513],'KLK':[28.5830,77.2558],
-  'TUGL':[28.5688,77.2530],'EMJ':[28.5545,77.2490],'SRKY':[28.5420,77.2461],'BDRP':[28.5285,77.2469],
-  'ESKM':[28.5135,77.2569],
-  // Pink Line
-  'MJLP':[28.7205,77.1530],'AZPK':[28.7086,77.1762],'MJE':[28.6935,77.1920],'SGTD':[28.6869,77.1981],
-  'SHPB':[28.6798,77.2067],'TRSN':[28.6672,77.2130],'LXMB':[28.6614,77.2289],'DRBG':[28.6568,77.2313],
-  'INA':[28.5745,77.2095],'ARJN':[28.5687,77.2034],'GNKP':[28.5621,77.1987],'MV1P':[28.6082,77.2937],
-  'KLDP':[28.5501,77.2480],'SRJN':[28.5341,77.2589],'LNTK':[28.5252,77.2706],'TTGR':[28.5130,77.2789],
-  'SHWV':[28.5049,77.2890],
-  // Green Line
-  'INDRG':[28.6664,77.1616],'ASHKP':[28.6686,77.1508],'SATGR':[28.6738,77.1401],'KTNRG':[28.6712,77.1300],
-  'SHJPR':[28.6611,77.1394],'MADSB':[28.6529,77.1330],'PBGWG':[28.6447,77.1233],'ESWRG':[28.6388,77.1177],
-  'PRGHI':[28.6325,77.1123],'UDYNV':[28.6277,77.1066],'SULTN':[28.6195,77.0990],'NANGL':[28.6131,77.0944],
-  'NANJS':[28.6094,77.0871],'RAJDH':[28.6094,77.0789],'MUNDG':[28.6104,77.0698],'MUNIN':[28.6196,77.0640],
-  'GHEVR':[28.6270,77.0562],'TIKRB':[28.6327,77.0472],'TIKRK':[28.6381,77.0420],'PANCH':[28.6432,77.0297],
-  'BAHMU':[28.6477,77.0184],'BRIGP':[28.6515,77.0101],
-  // Magenta Line
-  'JANW':[28.6258,77.0735],'DLHB':[28.6115,77.0863],'DSHJ':[28.6014,77.0943],'DBKL':[28.5868,77.1091],
-  'DKP':[28.5703,77.1268],'AIIMS':[28.5677,77.2060],'GMDI':[28.5638,77.2135],'HLUZ':[28.5559,77.2127],
-  'KALKJI':[28.5509,77.2614],'JASLA':[28.5449,77.2830],
-  // Airport Express
-  'ND':[28.6417,77.2206],'SHDRA':[28.6361,77.2127],'DSNR':[28.5705,77.1201],'IGIA3':[28.5562,77.0938],'DWKS21':[28.5769,77.0678],
-  // Grey Line
-  'DWKSE':[28.5923,77.0592],'NANGA':[28.5895,77.0190],
-  // Aqua Line
-  'AQ51':[28.6169,77.3592],'AQ50':[28.6118,77.3676],'GRNK':[28.5941,77.4138],'PRDS':[28.5891,77.4291],
+  // ── BLUE LINE ──
+  'NECC':[28.5706,77.3568],  // Noida Electronic City (estimated)
+  'NS62':[28.6139,77.3716],  // Noida Sector 62 (estimated)
+  'NS59':[28.6064,77.3677],  // Noida Sector 59
+  'NS61':[28.6101,77.3695],  // Noida Sector 61
+  'NS52':[28.6169,77.3592],  // Noida Sector 52
+  'NS34':[28.6181,77.3461],  // Noida Sector 34
+  'NCC':[28.57466,77.35608], // Noida City Centre ✓ GitHub
+  'GC':[28.56714,77.34598],  // Noida Golf Course ✓ GitHub
+  'BG':[28.56409,77.33420],  // Botanical Garden ✓ GitHub
+  'NS18':[28.57081,77.32612],// Noida Sector 18 ✓ GitHub
+  'NS16':[28.57819,77.31757],// Noida Sector 16 ✓ GitHub
+  'NS15':[28.58512,77.31139],// Noida Sector 15 ✓ GitHub
+  'NAN':[28.58916,77.30204], // New Ashok Nagar ✓ GitHub
+  'MVE':[28.59428,77.29455], // Mayur Vihar Extension ✓ GitHub
+  'MV1':[28.60442,77.28925], // Mayur Vihar-I ✓ GitHub
+  'AKD':[28.61806,77.27869], // Akshardham ✓ GitHub
+  'YMB':[28.6286,77.2830],   // Yamuna Bank (estimated)
+  'IDPT':[28.62051,77.24993],// Indraprastha ✓ GitHub
+  'SC':[28.62342,77.24250],  // Pragati Maidan / Supreme Court ✓ GitHub
+  'MH':[28.62588,77.23410],  // Mandi House ✓ GitHub
+  'BKR':[28.63003,77.22436], // Barakhamba Road ✓ GitHub
+  'RC':[28.63282,77.21826],  // Rajiv Chowk ✓ GitHub
+  'RKA':[28.63923,77.20840], // Ramakrishna Ashram Marg ✓ GitHub
+  'JHW':[28.64427,77.19988], // Jhandewalan ✓ GitHub
+  'KB':[28.64400,77.18855],  // Karol Bagh ✓ GitHub
+  'RP':[28.64250,77.17815],  // Rajendra Place ✓ GitHub
+  'PN':[28.64498,77.16929],  // Patel Nagar ✓ GitHub
+  'SHP':[28.6578,77.1598],   // Shadipur
+  'ESH':[28.65784,77.14248], // Moti Nagar / ESI ✓ GitHub
+  'KTNR':[28.65274,77.13164],// Ramesh Nagar ✓ GitHub
+  'RJRG':[28.64902,77.12270],// Rajouri Garden ✓ GitHub
+  'JNKPE':[28.63305,77.08669],// Janakpuri East ✓ GitHub
+  'JNKPW':[28.62943,77.07767],// Janakpuri West ✓ GitHub
+  'NWD':[28.62025,77.04514], // Nawada ✓ GitHub
+  'DWK':[28.61564,77.02197], // Dwarka ✓ GitHub
+  'DWK14':[28.60223,77.02588],// Dwarka Sector 14 ✓ GitHub
+  'DWK13':[28.59722,77.03326],// Dwarka Sector 13 ✓ GitHub
+  'DWK12':[28.59232,77.04051],// Dwarka Sector 12 ✓ GitHub
+  'DWK11':[28.58657,77.04929],// Dwarka Sector 11 ✓ GitHub
+  'DWK10':[28.58068,77.05682],// Dwarka Sector 10 ✓ GitHub
+  'DWK9':[28.57487,77.06454], // Dwarka Sector 9 ✓ GitHub
+  'DWK8':[28.56583,77.06706], // Dwarka Sector 8 ✓ GitHub
+  'DWK21':[28.55226,77.05828],// Dwarka Sector 21 ✓ GitHub
+  'DWKM':[28.61932,77.03326], // Dwarka Mor ✓ GitHub
+  // Blue Branch (Vaishali)
+  'LXMN':[28.63064,77.27749], // Laxmi Nagar ✓ GitHub
+  'NVH':[28.63663,77.28683],  // Nirman Vihar ✓ GitHub
+  'PVH':[28.64171,77.29543],  // Preet Vihar ✓ GitHub
+  'KKD':[28.64849,77.30558],  // Karkarduma ✓ GitHub
+  'AVH':[28.64695,77.31603],  // Anand Vihar ✓ GitHub
+  'KSB':[28.64544,77.32432],  // Kaushambi ✓ GitHub
+
+  // ── YELLOW LINE ──
+  'SMB':[28.72592,77.16267],  // Samaypur Badli / Jahangirpuri ✓ GitHub
+  'BGDK':[28.7256,77.1671],   // Badli (estimated)
+  'JGPI':[28.72592,77.16267], // Jahangirpuri ✓ GitHub
+  'ADRN':[28.71642,77.17046], // Adarsh Nagar ✓ GitHub
+  'AZAD':[28.70696,77.18053], // Azadpur ✓ GitHub
+  'MODL':[28.70278,77.19363], // Model Town ✓ GitHub
+  'GTBN':[28.69785,77.20722], // GTB Nagar ✓ GitHub
+  'VSWV':[28.69480,77.21483], // Vishwavidyalaya ✓ GitHub
+  'CIVIL':[28.67726,77.22410],// Civil Lines ✓ GitHub
+  'KSG':[28.66750,77.22817],  // Kashmere Gate ✓ GitHub
+  'CND':[28.65785,77.23014],  // Chandni Chowk ✓ GitHub
+  'CHW':[28.64931,77.22637],  // Chawri Bazar ✓ GitHub
+  'NDLS':[28.64307,77.22144], // New Delhi ✓ GitHub
+  'PTLC':[28.62295,77.21389], // Patel Chowk ✓ GitHub
+  'CSE':[28.61474,77.21191],  // Central Secretariat ✓ GitHub
+  'UGC':[28.58708,77.21209],  // Udyog Bhawan / Jor Bagh ✓ GitHub
+  'INA':[28.57526,77.20935],  // INA ✓ GitHub
+  'AIIMS':[28.56892,77.20771],// AIIMS ✓ GitHub
+  'GPK':[28.55979,77.20682],  // Green Park ✓ GitHub
+  'HZK':[28.54335,77.20667],  // Hauz Khas ✓ GitHub
+  'MLN':[28.52798,77.20565],  // Malviya Nagar ✓ GitHub
+  'SKT':[28.52060,77.20138],  // Saket ✓ GitHub
+  'QTB':[28.51302,77.18648],  // Qutab Minar ✓ GitHub
+  'CTR':[28.50671,77.17484],  // Chhatarpur ✓ GitHub
+  'GHT':[28.49383,77.14922],  // Ghitorni ✓ GitHub
+  'ARG':[28.48076,77.12583],  // Arjan Garh ✓ GitHub
+  'GDC':[28.48203,77.10232],  // Guru Dronacharya ✓ GitHub
+  'IFCO':[28.47209,77.07175], // IFFCO Chowk ✓ GitHub
+  'MGR':[28.47957,77.08006],  // MG Road ✓ GitHub
+  'HUDA':[28.45927,77.07268], // HUDA City Centre ✓ GitHub
+
+  // ── RED LINE ──
+  'DLSH':[28.67592,77.32142], // Dilshad Garden ✓ GitHub
+  'JHML':[28.67579,77.31239], // Jhilmil ✓ GitHub
+  'MSP':[28.67544,77.30095],  // Mansarovar Park ✓ GitHub
+  'WLCM':[28.6718,77.27756],  // Welcome ✓ GitHub
+  'SHRG':[28.66999,77.18169], // Shastri Nagar ✓ GitHub
+  'TZHZ':[28.66711,77.21653], // Tis Hazari ✓ GitHub
+  'PLBG':[28.66636,77.20727], // Pul Bangash ✓ GitHub
+  'PRTN':[28.66662,77.19882], // Pratap Nagar ✓ GitHub
+  'KNHR':[28.68254,77.16459], // Kanhiya Nagar ✓ GitHub
+  'KSHP':[28.68894,77.16160], // Keshav Puram ✓ GitHub
+  'NTJSP':[28.69591,77.15226],// Netaji Subhash Place ✓ GitHub
+  'KOHT':[28.69810,77.14024], // Kohat Enclave ✓ GitHub
+  'PTML':[28.70317,77.13223], // Pitam Pura ✓ GitHub
+  'ROHN':[28.70760,77.12591], // Rohini East ✓ GitHub
+  'ROHNW':[28.71483,77.11467],// Rohini West ✓ GitHub
+  'RITH':[28.72072,77.10713], // Rithala ✓ GitHub
+  'INDRL':[28.67319,77.16994],// Inderlok ✓ GitHub (also Green)
+
+  // ── VIOLET LINE ──
+  'KSHG':[28.66750,77.22817], // Kashmere Gate ✓ (shared)
+  'LJN':[28.57079,77.23653],  // Lajpat Nagar ✓ GitHub
+  'JNG':[28.58430,77.23766],  // Jangpura ✓ GitHub
+  'MHV':[28.62588,77.23410],  // Mandi House ✓ (shared)
+  'JNSM':[28.59040,77.23326], // Jawaharlal Nehru Stadium ✓ GitHub
+  'KMK':[28.60276,77.22829],  // Khan Market ✓ GitHub
+  'CSE_V':[28.61474,77.21191],// Central Secretariat ✓ (shared)
+  'MLCH':[28.56417,77.23423], // Moolchand ✓ GitHub
+  'KLKJ':[28.55007,77.25835], // Kalkaji Mandir ✓ GitHub
+  'GVDP':[28.54451,77.26401], // Govind Puri ✓ GitHub
+  'OKHL':[28.54292,77.27504], // Okhla ✓ GitHub
+  'JSAP':[28.53824,77.28319], // Jasola Apollo ✓ GitHub
+  'SRVH':[28.52878,77.28826], // Sarita Vihar ✓ GitHub
+  'MHET':[28.51938,77.29388], // Mohan Estate ✓ GitHub
+  'TUGL':[28.50254,77.29930], // Tughlakabad ✓ GitHub
+  'BDRP':[28.49334,77.30307], // Badarpur ✓ GitHub
+  'ESKM':[28.5135,77.2569],   // Escorts Mujesar (estimated)
+  'KAILK':[28.55527,77.24205],// Kailash Colony ✓ GitHub
+  'NHLP':[28.55148,77.25154], // Nehru Place ✓ GitHub
+
+  // ── PINK LINE ──
+  'MJLP':[28.7205,77.1530],   // Majlis Park
+  'AZPK':[28.7086,77.1762],   // Azadpur (Pink)
+  'SGTD':[28.6869,77.1981],   // Shalimar Bagh
+  'SHPB':[28.6798,77.2067],   // Shakurpur
+  'PBGW':[28.67032,77.14209], // Punjabi Bagh West ✓ GitHub
+  'PBGE':[28.67289,77.14614], // Punjabi Bagh East ✓ GitHub
+  'RNKE':[28.6421518,77.11606],// Rajouri Garden (Pink) ✓ GitHub
+  'MYPK':[28.6371795,77.1297],// Maya Puri ✓ GitHub
+  'DLLH':[28.57440,77.21024], // Dilli Haat INA ✓ GitHub
+  'INA_P':[28.5745,77.2095],  // INA (Pink)
+  'SRVK':[28.5449,77.2830],   // Sarojini Nagar area
+  'MV1P':[28.60442,77.28925], // Mayur Vihar-I (Pink)
+  'MVPI':[28.60586,77.29870], // Mayur Vihar Pocket-I ✓ GitHub
+  'WLCMP':[28.6718,77.27756], // Welcome (Pink)
+  'SHWV':[28.5049,77.2890],   // Shiv Vihar (estimated)
+
+  // ── GREEN LINE ──
+  'INDRG':[28.67319,77.16994],// Inderlok ✓ GitHub (shared)
+  'ASHKP':[28.67153,77.15527],// Ashok Park Main ✓ GitHub
+  'PSVH':[28.67730,77.11228], // Paschim Vihar East ✓ GitHub
+  'PSVHW':[28.67855,77.10227],// Paschim Vihar West ✓ GitHub
+  'PRGH':[28.67959,77.09261], // Peera Garhi ✓ GitHub
+  'UDYN':[28.6277,77.1066],   // Udyog Nagar
+  'SULTN':[28.6195,77.0990],  // Sultanpuri
+  'MDPR':[28.67734,77.11965], // Madipur ✓ GitHub
+  'NANGL':[28.68231,77.06471],// Nangloi ✓ GitHub
+  'NANJS':[28.68208,77.05596],// Nangloi Railway Station ✓ GitHub
+  'RAJDH':[28.68221,77.04381],// Rajdhani Park ✓ GitHub
+  'MUNDG':[28.68321,77.03133],// Mundka ✓ GitHub
+  'TIKRK':[28.6868661,76.9772],// Tikri Kalan ✓ GitHub
+  'BAHMU':[28.6477,77.0184],  // Bahadurgarh (estimated)
+  'BRIGP':[28.6515,77.0101],  // Brigadier Hoshiyar Singh (estimated)
+
+  // ── MAGENTA LINE ──
+  'JANW':[28.6258,77.0735],   // Janakpuri West (Magenta)
+  'DBKL':[28.61575,77.08517], // Dabri Mor ✓ GitHub
+  'SADRB':[28.57715,77.11115],// Sadar Bazaar Cantonment ✓ GitHub
+  'IITD':[28.54478,77.18987], // IIT Delhi ✓ GitHub
+  'HLUZ':[28.5559,77.2127],   // Hauz Khas (Magenta area)
+  'OKNS':[28.55448,77.26484], // Okhla NSIC ✓ GitHub
+  'BG_M':[28.56409,77.33420], // Botanical Garden (Magenta)
+  'JASLA':[28.5449,77.2830],  // Jasola Vihar Shaheen Bagh
+
+  // ── AIRPORT EXPRESS ──
+  'ND':[28.64307,77.22144],   // New Delhi ✓ GitHub
+  'SHDRA':[28.59178,77.16155],// Dhaula Kuan ✓ GitHub
+  'AERO':[28.54881,77.12092], // Delhi Aerocity ✓ GitHub
+  'IGIA':[28.55693,77.08669], // IGI Airport ✓ GitHub
+  'DWK21_A':[28.55226,77.05828],// Dwarka Sector 21 ✓ GitHub
+
+  // ── GREY LINE ──
+  'DWKSE':[28.61564,77.02197],// Dwarka (Grey start)
+  'NANGA':[28.6065,77.0074],  // Najafgarh (estimated)
+
+  // ── AQUA LINE ──
+  'AQ51':[28.6169,77.3592],   // Noida Sector 51
+  'AQ50':[28.53551,77.39102], // Noida Sector 50 ✓ GitHub
+  'NS143':[28.50266,77.42625],// Noida Sector 143 ✓ GitHub
 };
 
 function haversineKm(lat1,lng1,lat2,lng2){
