@@ -3230,6 +3230,68 @@ function detectLocation(){
       showNearbyModal(nearest, lat, lng);
     },
     function(err){
+      // If high accuracy fails due to timeout, retry with lower accuracy as fallback
+      if(err.code===3){
+        showGeoToast('GPS slow hai, network location try ho rahi hai...', 5000);
+        navigator.geolocation.getCurrentPosition(
+          function(pos){
+            var lat=pos.coords.latitude;
+            var lng=pos.coords.longitude;
+            console.log('[GeoTracker] Fallback coords:', lat, lng, 'accuracy:', pos.coords.accuracy);
+            var results=[];
+            var coords=STATION_COORDS;
+            var keys=Object.keys(coords);
+            for(var i=0;i<keys.length;i++){
+              var code=keys[i];
+              var stationData=CODE_MAP[code];
+              if(!stationData) continue;
+              var slat=coords[code][0], slng=coords[code][1];
+              var R=6371;
+              var dLat=(slat-lat)*Math.PI/180;
+              var dLng=(slng-lng)*Math.PI/180;
+              var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+                    Math.cos(lat*Math.PI/180)*Math.cos(slat*Math.PI/180)*
+                    Math.sin(dLng/2)*Math.sin(dLng/2);
+              var dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+              var merged={};
+              for(var k in stationData) merged[k]=stationData[k];
+              merged.dist=dist;
+              results.push(merged);
+            }
+            results.sort(function(a,b){return a.dist-b.dist;});
+            var nearest=results.slice(0,5);
+            btn.classList.remove('loading');
+            icon.textContent='📍';
+            btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+            if(!nearest.length){
+              btn.classList.add('error');
+              icon.textContent='❌';
+              showGeoToast('Koi nearby station nahi mila. Delhi NCR mein hain?', 4000);
+              return;
+            }
+            document.getElementById('geo-toast').classList.remove('show');
+            showNearbyModal(nearest, lat, lng);
+          },
+          function(err2){
+            btn.classList.remove('loading');
+            btn.classList.add('error');
+            icon.textContent='❌';
+            btnText.textContent='Dobara try karein';
+            var msg='Location access nahi mili.';
+            if(err2.code===1) msg='Permission denied. Browser mein location allow karein.';
+            else if(err2.code===2) msg='GPS unavailable. Location on hai?';
+            else msg='Location nahi mili. Dobara try karein.';
+            showGeoToast(msg, 4000);
+            setTimeout(function(){
+              btn.classList.remove('error');
+              icon.textContent='📍';
+              btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+            }, 4000);
+          },
+          {enableHighAccuracy:false, timeout:15000, maximumAge:30000}
+        );
+        return;
+      }
       btn.classList.remove('loading');
       btn.classList.add('error');
       icon.textContent='❌';
@@ -3237,7 +3299,6 @@ function detectLocation(){
       var msg='Location access nahi mili.';
       if(err.code===1) msg='Permission denied. Browser mein location allow karein.';
       else if(err.code===2) msg='GPS unavailable. Location on hai?';
-      else if(err.code===3) msg='Timeout. Dobara try karein.';
       showGeoToast(msg, 4000);
       setTimeout(function(){
         btn.classList.remove('error');
@@ -3245,7 +3306,7 @@ function detectLocation(){
         btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
       }, 4000);
     },
-    {enableHighAccuracy:false, timeout:15000, maximumAge:60000}
+    {enableHighAccuracy:true, timeout:30000, maximumAge:0}
   );
 }
 </script>
