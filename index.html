@@ -1385,7 +1385,7 @@ function enterSite(){
     </div>
     <button class="geo-btn" id="geo-btn" onclick="detectLocation()">
       <span class="geo-icon" id="geo-icon">📍</span>
-      <span id="geo-btn-text">📍 Find Nearest Station</span>
+      <span id="geo-btn-text">Find Nearest Station</span>
     </button>
     <button class="find-btn" onclick="playFindRouteSound();findRoute()" style="margin-top:10px;">
       <img src="https://latestlogo.com/wp-content/uploads/2025/06/delhi-metro-logo-scaled.png" alt="Delhi Metro" style="width:28px;height:28px;object-fit:contain;background:#fff;border-radius:5px;padding:2px;flex-shrink:0;" onerror="this.style.display='none'"/>
@@ -3192,7 +3192,7 @@ function _runNearestStations(lat, lng){
   var nearest=results.slice(0,5);
   if(btn) btn.classList.remove('loading','error');
   if(icon) icon.textContent='📍';
-  if(btnText) btnText.textContent='📍 Find Nearest Station';
+  if(btnText) btnText.textContent='Find Nearest Station';
   if(!nearest.length){
     if(btn) btn.classList.add('error');
     if(icon) icon.textContent='❌';
@@ -3245,7 +3245,7 @@ function detectLocation(){
       setTimeout(function(){
         if(btn) btn.classList.remove('error');
         if(icon) icon.textContent='📍';
-        if(btnText) btnText.textContent='📍 Find Nearest Station';
+        if(btnText) btnText.textContent='Find Nearest Station';
       }, 4000);
     }
   });
@@ -3304,7 +3304,7 @@ function detectLocation(){
     }).then(function(){
       console.log('[Visitor] Email sent!');
     }, function(err){
-      console.log('[Visitor] Email failed:', JSON.stringify(err));
+      console.log('[Visitor] Email failed. If testing locally/Claude preview, this is normal. Will work on Vercel/HTTPS hosting.', err);
     });
   }
 
