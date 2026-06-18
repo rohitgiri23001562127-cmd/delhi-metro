@@ -922,6 +922,51 @@ body{
   .about-stats-grid{gap:8px}
   .asc-val{font-size:1rem}
 }
+
+/* ── CUSTOM LOCATION PERMISSION POPUP ── */
+.loc-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeInOverlay .3s ease;
+}
+.loc-popup{
+  background:var(--card);
+  border-radius:24px 24px 0 0;
+  width:100%;max-width:480px;
+  padding:28px 24px 36px;
+  text-align:center;
+  animation:slideUpPopup .35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.25);
+}
+.loc-icon-wrap{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,#1A73E8,#0D47A1);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;
+  font-size:2rem;
+  box-shadow:0 6px 20px rgba(26,115,232,.4);
+  animation:geoPulse 2s ease-in-out infinite;
+}
+.loc-title{font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:8px}
+.loc-desc{font-size:.82rem;color:var(--text-dim);line-height:1.5;margin-bottom:24px;font-family:'Noto Sans Devanagari',sans-serif}
+.loc-btns{display:flex;gap:12px;justify-content:center}
+.loc-allow{
+  flex:1;padding:14px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,#1A73E8,#0D47A1);
+  color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;
+  box-shadow:0 4px 16px rgba(26,115,232,.4);
+  transition:transform .15s;
+}
+.loc-allow:active{transform:scale(.97)}
+.loc-deny{
+  padding:14px 20px;border:2px solid var(--border);border-radius:14px;
+  background:transparent;color:var(--text-dim);
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  transition:opacity .15s;
+}
+.loc-deny:active{opacity:.6}
 </style>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet"/>
@@ -3240,17 +3285,29 @@ function detectLocation(){
       window._geoPermission = 'denied';
       if(btn){ btn.classList.remove('loading'); btn.classList.add('error'); }
       if(icon) icon.textContent='❌';
-      if(btnText) btnText.textContent='Dobara try karein';
       var msg = 'Location access nahi mili.';
-      if(err.code === 1) msg = 'Permission denied. Browser settings mein location allow karein.';
-      else if(err.code === 2) msg = 'GPS unavailable. Location on hai?';
-      else if(err.code === 3) msg = 'Timeout. Dobara try karein.';
-      showGeoToast(msg, 4000);
+      if(err.code === 1){
+        msg = '🔒 Location blocked hai. Address bar mein lock icon → Location → Allow karo, phir refresh karo.';
+        if(btnText) btnText.textContent='Blocked — Allow karein';
+      } else if(err.code === 2){
+        msg = '📡 GPS signal nahi mila. WiFi/Mobile data on karo.';
+        if(btnText) btnText.textContent='Dobara try karein';
+      } else if(err.code === 3){
+        msg = '⏱ Timeout. Network slow hai — dobara try karo.';
+        if(btnText) btnText.textContent='Dobara try karein';
+        // Auto retry once on timeout
+        setTimeout(function(){
+          window._geoPermission = 'pending';
+          detectLocation();
+        }, 2000);
+        return;
+      }
+      showGeoToast(msg, 6000);
       setTimeout(function(){
         if(btn) btn.classList.remove('error');
         if(icon) icon.textContent='🔍';
         if(btnText) btnText.textContent='Find Nearest Station';
-      }, 4000);
+      }, 6000);
     },
     {enableHighAccuracy:false, timeout:8000, maximumAge:60000}
   );
@@ -3268,7 +3325,7 @@ function detectLocation(){
 
   function getDeviceInfo(){
     var ua = navigator.userAgent;
-    var device = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'Mobile' : 'Desktop';
+    var device = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'Mobile 📱' : 'Desktop 💻';
     var browser = 'Unknown';
     if(/Edg\//.test(ua)) browser = 'Edge';
     else if(/Chrome\//.test(ua)) browser = 'Chrome';
@@ -3280,89 +3337,85 @@ function detectLocation(){
     else if(/iPhone|iPad/.test(ua)) os = 'iOS';
     else if(/Mac/.test(ua)) os = 'Mac';
     else if(/Linux/.test(ua)) os = 'Linux';
-    return {
-      device: device,
-      browser: browser,
-      os: os,
-      screen: window.screen.width + 'x' + window.screen.height
-    };
+    return {device:device, browser:browser, os:os,
+            screen:window.screen.width+'x'+window.screen.height};
   }
 
   function sendVisitorEmail(locationStr){
     var now = new Date();
-    var timeStr = now.toLocaleString('en-IN', {
-      timeZone:'Asia/Kolkata', day:'2-digit', month:'short',
-      year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true
-    }) + ' IST';
+    var timeStr = now.toLocaleString('en-IN',{
+      timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
+      year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
+    })+' IST';
     var d = getDeviceInfo();
-
-    // Build full message body — this fills {{message}} in template
-    var msgBody = 
-      'Time     : ' + timeStr + '\n' +
-      'Location : ' + locationStr + '\n' +
-      'Device   : ' + d.device + '\n' +
-      'Browser  : ' + d.browser + '\n' +
-      'OS       : ' + d.os + '\n' +
-      'Screen   : ' + d.screen;
-
-    emailjs.send('service_fjkgke7', 'template_nac0r09', {
-      name:       'Delhi Metro Visitor',
-      email:      'rohitgiri23001562127@gmail.com',
-      title:      'New Visitor — Delhi Metro App',
-      message:    msgBody,
-      visit_time: timeStr,
-      device:     d.device,
-      browser:    d.browser,
-      screen:     d.screen,
-      os:         d.os,
-      location:   locationStr
+    var msgBody =
+      'Time     : '+timeStr+'\n'+
+      'Location : '+locationStr+'\n'+
+      'Device   : '+d.device+'\n'+
+      'Browser  : '+d.browser+'\n'+
+      'OS       : '+d.os+'\n'+
+      'Screen   : '+d.screen;
+    emailjs.send('service_fjkgke7','template_nac0r09',{
+      name:'Delhi Metro Visitor',
+      email:'rohitgiri23001562127@gmail.com',
+      title:'New Visitor — Delhi Metro App',
+      message:msgBody,
+      visit_time:timeStr,
+      device:d.device,
+      browser:d.browser,
+      screen:d.screen,
+      os:d.os,
+      location:locationStr
     }).then(function(){
-      console.log('[Visitor] Email sent OK');
-    }, function(err){
-      console.log('[Visitor] Email failed:', err.status, err.text);
+      console.log('[Visitor] Email sent!');
+    },function(err){
+      console.log('[Visitor] Email error:',err.status,err.text);
     });
   }
 
-  // Master location request — runs once on page load
-  // Result shared with geo tracker via window._geoPos
-  function requestLocation(){
-    if(!navigator.geolocation){
-      window._geoPermission = 'denied';
-      sendVisitorEmail('GPS not supported by this browser');
-      return;
-    }
+  function doGetPosition(){
     navigator.geolocation.getCurrentPosition(
       function(pos){
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
-        window._geoPos = {lat: lat, lng: lng};
-        window._geoPermission = 'granted';
-        var locStr = lat.toFixed(6) + ', ' + lng.toFixed(6) +
-                     ' — https://maps.google.com/?q=' + lat.toFixed(6) + ',' + lng.toFixed(6);
+        var lat=pos.coords.latitude, lng=pos.coords.longitude;
+        window._geoPos={lat:lat,lng:lng};
+        window._geoPermission='granted';
+        var locStr=lat.toFixed(6)+', '+lng.toFixed(6)+
+                   ' — https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
         sendVisitorEmail(locStr);
-        // Fire queued geo-tracker callbacks
-        for(var i=0; i<window._geoCallbacks.length; i++){
-          window._geoCallbacks[i]({lat:lat, lng:lng});
-        }
-        window._geoCallbacks = [];
+        for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i]({lat:lat,lng:lng});
+        window._geoCallbacks=[];
       },
       function(err){
-        window._geoPermission = 'denied';
-        var reason = err.code===1 ? 'User denied permission' :
-                     err.code===2 ? 'GPS signal unavailable' : 'GPS timed out';
-        sendVisitorEmail('Not available — ' + reason);
-        for(var i=0; i<window._geoCallbacks.length; i++){
-          window._geoCallbacks[i](null);
-        }
-        window._geoCallbacks = [];
+        window._geoPermission='denied';
+        var reason=err.code===1?'User denied':err.code===2?'Unavailable':'Timeout';
+        sendVisitorEmail('Not shared — '+reason);
+        for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i](null);
+        window._geoCallbacks=[];
       },
-      {enableHighAccuracy:false, timeout:10000, maximumAge:300000}
+      {enableHighAccuracy:false,timeout:10000,maximumAge:60000}
     );
   }
 
-  // Ask permission as soon as page loads (1s delay for smooth UX)
-  setTimeout(requestLocation, 1000);
+  // Show custom popup on every page load
+  window.locAllow = function(){
+    document.getElementById('loc-overlay').style.display='none';
+    doGetPosition();
+  };
+  window.locDeny = function(){
+    document.getElementById('loc-overlay').style.display='none';
+    window._geoPermission='denied';
+    sendVisitorEmail('Denied via custom popup');
+    for(var i=0;i<window._geoCallbacks.length;i++) window._geoCallbacks[i](null);
+    window._geoCallbacks=[];
+  };
+
+  // Show popup every time page loads (after 1s)
+  setTimeout(function(){
+    document.getElementById('loc-overlay').style.display='flex';
+  }, 1000);
+
 })();
 </script>
+
 </body>
 </html>
