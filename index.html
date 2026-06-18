@@ -1383,7 +1383,11 @@ function enterSite(){
         </div>
       </div>
     </div>
-    <button class="find-btn" onclick="playFindRouteSound();findRoute()">
+    <button class="geo-btn" id="geo-btn" onclick="detectLocation()">
+      <span class="geo-icon" id="geo-icon">📍</span>
+      <span id="geo-btn-text">Use My Location — मेरी location से nearest station चुनें</span>
+    </button>
+    <button class="find-btn" onclick="playFindRouteSound();findRoute()" style="margin-top:10px;">
       <img src="https://latestlogo.com/wp-content/uploads/2025/06/delhi-metro-logo-scaled.png" alt="Delhi Metro" style="width:28px;height:28px;object-fit:contain;background:#fff;border-radius:5px;padding:2px;flex-shrink:0;" onerror="this.style.display='none'"/>
       <span id="btn-text">Find Route • रास्ता खोजें</span>
     </button>
@@ -2487,6 +2491,104 @@ function _computeRoute(fc, tc, rw){
 .help-opt-text{flex:1}
 .help-opt-title{font-weight:800;font-size:.95rem;color:var(--text)}
 .help-opt-sub{font-family:'Noto Sans Devanagari',sans-serif;font-size:.72rem;color:var(--text-dim);margin-top:2px}
+
+/* ── GEO TRACKER ── */
+.geo-btn{
+  display:flex;align-items:center;gap:7px;
+  background:linear-gradient(135deg,#1A73E8,#0D47A1);
+  border:none;border-radius:10px;padding:8px 14px;
+  color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;
+  transition:transform .15s,box-shadow .2s;
+  box-shadow:0 3px 10px rgba(26,115,232,.4);
+  white-space:nowrap;
+  margin-top:8px;
+  width:100%;
+  justify-content:center;
+}
+.geo-btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(26,115,232,.5)}
+.geo-btn:active{transform:scale(.97)}
+.geo-btn .geo-icon{font-size:1rem;animation:geoPulse 2s ease-in-out infinite}
+@keyframes geoPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.geo-btn.loading .geo-icon{animation:spin .7s linear infinite}
+.geo-btn.success{background:linear-gradient(135deg,#148A4E,#0A6630)}
+.geo-btn.error{background:linear-gradient(135deg,#C0392B,#962C22)}
+
+/* Nearest station toast */
+.geo-toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  z-index:5000;
+  background:rgba(20,12,4,.92);
+  color:#fff;border-radius:14px;padding:13px 20px;
+  font-size:.85rem;font-weight:600;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  display:flex;align-items:center;gap:10px;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+  opacity:0;max-width:340px;text-align:center;
+  backdrop-filter:blur(8px);
+  pointer-events:none;
+}
+.geo-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.geo-toast .gt-icon{font-size:1.3rem;flex-shrink:0}
+
+/* Nearby stations popup */
+.nearby-modal{
+  position:fixed;inset:0;z-index:3000;
+  background:rgba(10,6,2,.55);
+  backdrop-filter:blur(4px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.nearby-modal.open{display:flex;animation:fadeInOverlay .25s ease both}
+.nearby-popup{
+  background:var(--card);
+  border-radius:20px 20px 0 0;
+  width:100%;max-width:480px;
+  max-height:70vh;overflow-y:auto;
+  box-shadow:0 -8px 40px rgba(0,0,0,.3);
+  animation:slideUpPopup .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+.nearby-header{
+  background:linear-gradient(135deg,#1A73E8,#0D47A1);
+  color:#fff;padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-radius:20px 20px 0 0;
+  position:sticky;top:0;z-index:1;
+}
+.nearby-title{font-size:1rem;font-weight:800}
+.nearby-sub{font-family:'Noto Sans Devanagari',sans-serif;font-size:.72rem;color:rgba(255,255,255,.75);margin-top:2px}
+.nearby-close{
+  background:rgba(255,255,255,.15);border:none;color:#fff;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.nearby-list{padding:14px 16px 24px;display:flex;flex-direction:column;gap:10px}
+.nearby-item{
+  display:flex;align-items:center;gap:14px;
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:12px;padding:12px 14px;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+}
+.nearby-item:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.nearby-item:active{transform:scale(.98)}
+.ni-rank{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:800;color:#fff;flex-shrink:0;
+}
+.ni-info{flex:1;min-width:0}
+.ni-name{font-size:.9rem;font-weight:700;color:var(--text)}
+.ni-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.72rem;color:var(--text-dim);margin-top:2px}
+.ni-meta{font-size:.7rem;color:var(--text-dim);margin-top:3px;display:flex;align-items:center;gap:6px}
+.ni-dist{
+  background:rgba(26,115,232,.1);border:1px solid rgba(26,115,232,.25);
+  border-radius:999px;padding:2px 8px;font-size:.68rem;font-weight:700;color:#1A73E8;
+}
+.ni-use{
+  background:linear-gradient(135deg,var(--red-light),var(--red-dark));
+  color:#fff;border:none;border-radius:8px;padding:7px 14px;
+  font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;
+  transition:transform .15s;
+}
+.ni-use:hover{transform:scale(1.05)}
 </style>
 
 <!-- HELP MODAL -->
@@ -2534,6 +2636,26 @@ function _computeRoute(fc, tc, rw){
         <span style="color:#F57F17;font-size:1.1rem;">→</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- GEO TOAST -->
+<div class="geo-toast" id="geo-toast">
+  <span class="gt-icon">📍</span>
+  <span id="geo-toast-msg">Location detect ho rahi hai...</span>
+</div>
+
+<!-- NEARBY STATIONS MODAL -->
+<div class="nearby-modal" id="nearby-modal" onclick="closeNearbyOutside(event)">
+  <div class="nearby-popup">
+    <div class="nearby-header">
+      <div>
+        <div class="nearby-title">📍 Nearest Metro Stations</div>
+        <div class="nearby-sub">आपके नज़दीकी मेट्रो स्टेशन — select करें</div>
+      </div>
+      <button class="nearby-close" onclick="closeNearbyModal()">✕</button>
+    </div>
+    <div class="nearby-list" id="nearby-list"></div>
   </div>
 </div>
 
@@ -2680,6 +2802,205 @@ function sendHelpEmail(type){
   }
   closeHelpModal();
   window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+body,'_blank');
+}
+</script>
+
+// ── GEO TRACKER ──
+// Major Delhi Metro station coordinates (lat, lng)
+const STATION_COORDS = {
+  // Blue Line
+  'NECC':[28.5706,77.3568],'NS62':[28.6139,77.3716],'NS59':[28.6064,77.3677],'NS61':[28.6101,77.3695],
+  'NS52':[28.6169,77.3592],'NS34':[28.6181,77.3461],'NCC':[28.6205,77.3403],'GC':[28.5817,77.3371],
+  'BG':[28.5611,77.3290],'NS18':[28.5740,77.3205],'NS16':[28.5829,77.3148],'NS15':[28.5893,77.3098],
+  'NAN':[28.6097,77.3012],'MVE':[28.6131,77.2982],'MV1':[28.6082,77.2937],'AKD':[28.6187,77.2849],
+  'YMB':[28.6286,77.2830],'IDPT':[28.6334,77.2697],'SC':[28.6335,77.2494],'MH':[28.6271,77.2415],
+  'BKR':[28.6323,77.2269],'RC':[28.6330,77.2197],'RKA':[28.6376,77.2105],'JHW':[28.6444,77.2040],
+  'KB':[28.6514,77.1908],'RP':[28.6565,77.1800],'PN':[28.6593,77.1703],'SHP':[28.6578,77.1598],
+  'ESH':[28.6474,77.1352],'DWK12':[28.6309,77.1046],'DWK14':[28.6234,77.0863],
+  'DWK':[28.5923,77.0592],'DWK21':[28.5769,77.0678],
+  // Yellow Line
+  'SMB':[28.7368,77.1690],'BGDK':[28.7256,77.1671],'JGPI':[28.7210,77.1669],'RITH':[28.7088,77.1550],
+  'NATH':[28.7030,77.1487],'KGSM':[28.6985,77.1454],'PIT':[28.6926,77.1431],'ROHC':[28.6870,77.1409],
+  'INDRL':[28.6758,77.1567],'EVNG':[28.6716,77.1568],'NETJI':[28.6673,77.1574],'AZAD':[28.6638,77.1680],
+  'WLLS':[28.6561,77.1776],'RBHS':[28.6502,77.1924],'KSSB':[28.6606,77.2026],'NDLS':[28.6420,77.2195],
+  'NDB':[28.6263,77.2153],'CPC':[28.6271,77.2187],'UGC':[28.6059,77.2111],'HUDA':[28.4595,77.0266],
+  // Red Line
+  'RMR':[28.7289,77.2027],'SHAHB':[28.7257,77.2077],'GMPB':[28.7218,77.2133],'SLMB':[28.7199,77.2233],
+  'PRBL':[28.7170,77.2321],'MSDI':[28.7126,77.2432],'WELC':[28.7094,77.2563],'SEWK':[28.6969,77.2646],
+  'VISHW':[28.6910,77.2718],'SBNK':[28.6781,77.2760],'KVSR':[28.6735,77.2803],'MNGF':[28.6694,77.2858],
+  'KSHG':[28.6650,77.2890],'DLSH':[28.6617,77.3166],
+  // Violet Line
+  'KSG':[28.6655,77.2891],'LJN':[28.6402,77.2750],'JNG':[28.6365,77.2653],'MHV':[28.6271,77.2415],
+  'KKD':[28.6260,77.2522],'NZM':[28.5952,77.2505],'SVPR':[28.5898,77.2513],'KLK':[28.5830,77.2558],
+  'TUGL':[28.5688,77.2530],'EMJ':[28.5545,77.2490],'SRKY':[28.5420,77.2461],'BDRP':[28.5285,77.2469],
+  'ESKM':[28.5135,77.2569],
+  // Pink Line
+  'MJLP':[28.7205,77.1530],'AZPK':[28.7086,77.1762],'MJE':[28.6935,77.1920],'SGTD':[28.6869,77.1981],
+  'SHPB':[28.6798,77.2067],'TRSN':[28.6672,77.2130],'LXMB':[28.6614,77.2289],'DRBG':[28.6568,77.2313],
+  'INA':[28.5745,77.2095],'ARJN':[28.5687,77.2034],'GNKP':[28.5621,77.1987],'MV1P':[28.6082,77.2937],
+  'KLDP':[28.5501,77.2480],'SRJN':[28.5341,77.2589],'LNTK':[28.5252,77.2706],'TTGR':[28.5130,77.2789],
+  'SHWV':[28.5049,77.2890],
+  // Green Line
+  'INDRG':[28.6664,77.1616],'ASHKP':[28.6686,77.1508],'SATGR':[28.6738,77.1401],'KTNRG':[28.6712,77.1300],
+  'SHJPR':[28.6611,77.1394],'MADSB':[28.6529,77.1330],'PBGWG':[28.6447,77.1233],'ESWRG':[28.6388,77.1177],
+  'PRGHI':[28.6325,77.1123],'UDYNV':[28.6277,77.1066],'SULTN':[28.6195,77.0990],'NANGL':[28.6131,77.0944],
+  'NANJS':[28.6094,77.0871],'RAJDH':[28.6094,77.0789],'MUNDG':[28.6104,77.0698],'MUNIN':[28.6196,77.0640],
+  'GHEVR':[28.6270,77.0562],'TIKRB':[28.6327,77.0472],'TIKRK':[28.6381,77.0420],'PANCH':[28.6432,77.0297],
+  'BAHMU':[28.6477,77.0184],'BRIGP':[28.6515,77.0101],
+  // Magenta Line
+  'JANW':[28.6258,77.0735],'DLHB':[28.6115,77.0863],'DSHJ':[28.6014,77.0943],'DBKL':[28.5868,77.1091],
+  'DKP':[28.5703,77.1268],'AIIMS':[28.5677,77.2060],'GMDI':[28.5638,77.2135],'HLUZ':[28.5559,77.2127],
+  'KALKJI':[28.5509,77.2614],'JASLA':[28.5449,77.2830],
+  // Airport Express
+  'ND':[28.6417,77.2206],'SHDRA':[28.6361,77.2127],'DSNR':[28.5705,77.1201],'IGIA3':[28.5562,77.0938],'DWKS21':[28.5769,77.0678],
+  // Grey Line
+  'DWKSE':[28.5923,77.0592],'NANGA':[28.5895,77.0190],
+  // Aqua Line
+  'AQ51':[28.6169,77.3592],'AQ50':[28.6118,77.3676],'GRNK':[28.5941,77.4138],'PRDS':[28.5891,77.4291],
+};
+
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function getNearestStations(lat,lng,topN=5){
+  const results=[];
+  Object.entries(STATION_COORDS).forEach(([code,[slat,slng]])=>{
+    const s=CODE_MAP[code];
+    if(!s) return;
+    const d=haversineKm(lat,lng,slat,slng);
+    results.push({...s, dist:d});
+  });
+  results.sort((a,b)=>a.dist-b.dist);
+  return results.slice(0,topN);
+}
+
+function showGeoToast(msg, duration=3000){
+  const t=document.getElementById('geo-toast');
+  document.getElementById('geo-toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+function closeNearbyModal(){
+  document.getElementById('nearby-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeNearbyOutside(e){
+  if(e.target.id==='nearby-modal') closeNearbyModal();
+}
+
+function selectNearbyStation(code){
+  const s=CODE_MAP[code];
+  if(!s) return;
+  fromCode=code;
+  const inp=document.getElementById('from-input');
+  inp.value=s.en+' ('+s.lineLabel+')';
+  inp.setAttribute('readonly','');
+  document.getElementById('from-dropdown').classList.remove('open');
+  closeNearbyModal();
+
+  // Update geo button to success state
+  const btn=document.getElementById('geo-btn');
+  btn.classList.remove('loading');
+  btn.classList.add('success');
+  document.getElementById('geo-icon').textContent='✅';
+  document.getElementById('geo-btn-text').textContent='Station set: '+s.en;
+
+  showGeoToast('✅ '+s.en+' — FROM mein set ho gaya!', 3000);
+
+  // Scroll to search card
+  document.querySelector('.search-wrap').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function showNearbyModal(stations, userLat, userLng){
+  const list=document.getElementById('nearby-list');
+  list.innerHTML='';
+  const lineColors={'blue':'#1565C0','violet':'#6A0DAD','pink':'#E91E8C','yellow':'#F6C200',
+    'red-metro':'#E53935','green-line':'#148A4E','magenta':'#A6267D','grey':'#8B8B8B',
+    'airport':'#F2A900','aqua':'#00BCD4'};
+  stations.forEach((s,i)=>{
+    const km=s.dist.toFixed(2);
+    const color=lineColors[s.line]||'#888';
+    const div=document.createElement('div');
+    div.className='nearby-item';
+    div.innerHTML=`
+      <div class="ni-rank" style="background:${color}">${i+1}</div>
+      <div class="ni-info">
+        <div class="ni-name">${s.en}</div>
+        <div class="ni-hi">${s.hi}</div>
+        <div class="ni-meta">
+          <span class="ni-dist">📏 ${km} km</span>
+          <span style="font-size:.68rem;font-weight:700;color:${color}">${s.lineLabel}</span>
+        </div>
+      </div>
+      <button class="ni-use" onclick="selectNearbyStation('${s.c}')">Use ➤</button>`;
+    list.appendChild(div);
+  });
+  document.getElementById('nearby-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function detectLocation(){
+  if(!navigator.geolocation){
+    showGeoToast('❌ Aapka browser location support nahi karta', 3000);
+    return;
+  }
+  const btn=document.getElementById('geo-btn');
+  const icon=document.getElementById('geo-icon');
+  const btnText=document.getElementById('geo-btn-text');
+
+  btn.classList.add('loading');
+  btn.classList.remove('success','error');
+  icon.textContent='⏳';
+  btnText.textContent='Location detect ho rahi hai...';
+  showGeoToast('📍 GPS se location detect ho rahi hai...', 8000);
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      const lat=pos.coords.latitude, lng=pos.coords.longitude;
+      const nearest=getNearestStations(lat,lng,5);
+
+      btn.classList.remove('loading');
+      icon.textContent='📍';
+      btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+
+      if(!nearest.length){
+        btn.classList.add('error');
+        icon.textContent='❌';
+        showGeoToast('❌ Koi nearby station nahi mila', 3000);
+        return;
+      }
+
+      // If nearest is very close (< 0.8 km), auto-select it
+      if(nearest[0].dist < 0.8){
+        selectNearbyStation(nearest[0].c);
+      } else {
+        // Show list to pick from
+        document.getElementById('geo-toast').classList.remove('show');
+        showNearbyModal(nearest, lat, lng);
+      }
+    },
+    function(err){
+      btn.classList.remove('loading');
+      btn.classList.add('error');
+      icon.textContent='❌';
+      btnText.textContent='Location access denied — Use My Location';
+      let msg='❌ Location access nahi mili.';
+      if(err.code===1) msg='❌ Location permission denied. Browser settings mein allow karein.';
+      else if(err.code===2) msg='❌ Location unavailable. GPS on hai?';
+      else if(err.code===3) msg='❌ Location timeout. Dobara try karein.';
+      showGeoToast(msg, 4000);
+      setTimeout(()=>{
+        btn.classList.remove('error');
+        icon.textContent='📍';
+        btnText.textContent='Use My Location — मेरी location से nearest station चुनें';
+      }, 4000);
+    },
+    {enableHighAccuracy:true, timeout:10000, maximumAge:30000}
+  );
 }
 </script>
 
