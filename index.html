@@ -1384,7 +1384,7 @@ function enterSite(){
       </div>
     </div>
     <button class="geo-btn" id="geo-btn" onclick="detectLocation()">
-      <span class="geo-icon" id="geo-icon">📍</span>
+      <span class="geo-icon" id="geo-icon">🔍</span>
       <span id="geo-btn-text">Find Nearest Station</span>
     </button>
     <button class="find-btn" onclick="playFindRouteSound();findRoute()" style="margin-top:10px;">
@@ -3191,7 +3191,7 @@ function _runNearestStations(lat, lng){
   results.sort(function(a,b){return a.dist-b.dist;});
   var nearest=results.slice(0,5);
   if(btn) btn.classList.remove('loading','error');
-  if(icon) icon.textContent='📍';
+  if(icon) icon.textContent='🔍';
   if(btnText) btnText.textContent='Find Nearest Station';
   if(!nearest.length){
     if(btn) btn.classList.add('error');
@@ -3213,42 +3213,47 @@ function detectLocation(){
   var icon=document.getElementById('geo-icon');
   var btnText=document.getElementById('geo-btn-text');
 
-  // If already have location cached, use it directly
-  if(window._geoPermission === 'granted' && window._geoPos){
+  // If already have location cached, use it directly — no popup needed
+  if(window._geoPos && window._geoPermission === 'granted'){
     _runNearestStations(window._geoPos.lat, window._geoPos.lng);
     return;
   }
 
-  // If denied already
-  if(window._geoPermission === 'denied'){
-    if(btn) btn.classList.add('error');
-    if(icon) icon.textContent='❌';
-    showGeoToast('Location permission denied. Browser settings mein allow karein.', 4000);
-    return;
-  }
-
-  // Still pending — show loading and wait
+  // Show loading state
   if(btn){ btn.classList.add('loading'); btn.classList.remove('success','error'); }
   if(icon) icon.textContent='⏳';
   if(btnText) btnText.textContent='Location detect ho rahi hai...';
   showGeoToast('GPS se location detect ho rahi hai...', 10000);
 
-  // Queue callback
-  window._geoCallbacks.push(function(pos){
-    if(pos){
-      _runNearestStations(pos.lat, pos.lng);
-    } else {
+  // Always call getCurrentPosition directly — browser reuses permission if already granted
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      // Store globally so future calls are instant
+      window._geoPos = {lat: lat, lng: lng};
+      window._geoPermission = 'granted';
+      // Run nearest stations
+      _runNearestStations(lat, lng);
+    },
+    function(err){
+      window._geoPermission = 'denied';
       if(btn){ btn.classList.remove('loading'); btn.classList.add('error'); }
       if(icon) icon.textContent='❌';
       if(btnText) btnText.textContent='Dobara try karein';
-      showGeoToast('Location access nahi mili. Browser settings check karein.', 4000);
+      var msg = 'Location access nahi mili.';
+      if(err.code === 1) msg = 'Permission denied. Browser settings mein location allow karein.';
+      else if(err.code === 2) msg = 'GPS unavailable. Location on hai?';
+      else if(err.code === 3) msg = 'Timeout. Dobara try karein.';
+      showGeoToast(msg, 4000);
       setTimeout(function(){
         if(btn) btn.classList.remove('error');
-        if(icon) icon.textContent='📍';
+        if(icon) icon.textContent='🔍';
         if(btnText) btnText.textContent='Find Nearest Station';
       }, 4000);
-    }
-  });
+    },
+    {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
+  );
 }
 </script>
 
