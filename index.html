@@ -3239,5 +3239,76 @@ function detectLocation(){
 }
 </script>
 
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+(function(){
+  emailjs.init('sLxniKQ69d-bZt9Ui');
+
+  function sendVisitorEmail(locationStr){
+    var now = new Date();
+    var timeStr = now.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day:'2-digit', month:'short', year:'numeric',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true
+    }) + ' IST';
+
+    var ua = navigator.userAgent;
+    var device = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'Mobile 📱' : 'Desktop 💻';
+    var browser = 'Unknown';
+    if(ua.indexOf('Chrome') > -1) browser = 'Chrome';
+    else if(ua.indexOf('Firefox') > -1) browser = 'Firefox';
+    else if(ua.indexOf('Safari') > -1) browser = 'Safari';
+    else if(ua.indexOf('Edge') > -1) browser = 'Edge';
+    var os = 'Unknown';
+    if(ua.indexOf('Windows') > -1) os = 'Windows';
+    else if(ua.indexOf('Android') > -1) os = 'Android';
+    else if(ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
+    else if(ua.indexOf('Linux') > -1) os = 'Linux';
+    else if(ua.indexOf('Mac') > -1) os = 'Mac';
+    var screen = window.screen.width + 'x' + window.screen.height;
+
+    emailjs.send('service_fjkgke7', 'template_nac0r09', {
+      name: 'Delhi Metro Visitor',
+      email: 'visitor@delhimetro.app',
+      title: 'New Visitor Alert',
+      message: '',
+      visit_time: timeStr,
+      device: device,
+      browser: browser,
+      screen: screen,
+      os: os,
+      location: locationStr
+    }).then(function(){
+      console.log('[Visitor] Email sent!');
+    }, function(err){
+      console.log('[Visitor] Email error:', err);
+    });
+  }
+
+  // Wait for page to load then track visitor
+  window.addEventListener('load', function(){
+    // Ask location permission
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          var lat = pos.coords.latitude.toFixed(5);
+          var lng = pos.coords.longitude.toFixed(5);
+          var locStr = lat + ', ' + lng + ' (maps.google.com/?q=' + lat + ',' + lng + ')';
+          sendVisitorEmail(locStr);
+        },
+        function(){
+          sendVisitorEmail('Location permission denied / unavailable');
+        },
+        {enableHighAccuracy:false, timeout:10000, maximumAge:0}
+      );
+    } else {
+      sendVisitorEmail('Geolocation not supported');
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
