@@ -3245,6 +3245,7 @@ function detectLocation(){
 <script>
 (function(){
   emailjs.init('sLxniKQ69d-bZt9Ui');
+  window._visitorEmailSent = false;
 
   function sendVisitorEmail(locationStr){
     var now = new Date();
@@ -3281,32 +3282,37 @@ function detectLocation(){
       os: os,
       location: locationStr
     }).then(function(){
-      console.log('[Visitor] Email sent!');
+      console.log('[Visitor] Email sent successfully!');
+      window._visitorEmailSent = true;
     }, function(err){
-      console.log('[Visitor] Email error:', err);
+      console.log('[Visitor] Email error:', JSON.stringify(err));
     });
   }
 
-  // Wait for page to load then track visitor
-  window.addEventListener('load', function(){
-    // Ask location permission
+  // Track visitor immediately on page load
+  // Use a small delay so page renders first
+  setTimeout(function(){
     if(navigator.geolocation){
+      // This will show the permission popup
       navigator.geolocation.getCurrentPosition(
         function(pos){
           var lat = pos.coords.latitude.toFixed(5);
           var lng = pos.coords.longitude.toFixed(5);
-          var locStr = lat + ', ' + lng + ' (maps.google.com/?q=' + lat + ',' + lng + ')';
+          var locStr = lat + ', ' + lng + ' | https://maps.google.com/?q=' + lat + ',' + lng;
           sendVisitorEmail(locStr);
         },
-        function(){
-          sendVisitorEmail('Location permission denied / unavailable');
+        function(err){
+          // Permission denied or error - still send email with device info
+          var reason = err.code === 1 ? 'User denied permission' :
+                       err.code === 2 ? 'Position unavailable' : 'Timeout';
+          sendVisitorEmail('Not shared (' + reason + ')');
         },
-        {enableHighAccuracy:false, timeout:10000, maximumAge:0}
+        {enableHighAccuracy:false, timeout:15000, maximumAge:0}
       );
     } else {
-      sendVisitorEmail('Geolocation not supported');
+      sendVisitorEmail('Geolocation not supported by browser');
     }
-  });
+  }, 1500);
 })();
 </script>
 
